@@ -1,94 +1,56 @@
 import React, { Component } from 'react';
-import Axios from 'axios';
-import WeatherIconFiles from './WeatherIconFiles'
-import logo from './logo.svg';
+import FiveDayForecast from './FiveDayForecast';
 import './App.css';
 
-// props: weatherCode, time
-class WeatherIcon extends Component {
-  constructor(props) {
-    super(props);
-
-    const rootFolder = '/weather-icons/';
-    const imgKey = this.props.weatherCode + '-' + this.props.time;
-    this.imgPath = rootFolder + WeatherIconFiles[imgKey] + '.svg';
-  }
-
-  render() {
-    return (
-      <div className='WeatherIcon'>
-        <img src={this.imgPath} alt={this.imgPath}></img>
-      </div>
-    );
-  }
-}
-
-class Temperature extends Component {
+export default class App extends Component {
   constructor(props) {
     super(props);
 
     this.state = {
-      displayCelsius: true,
+      determinedLocation: false,
+    };
+
+    this.getUserLocation().then((loc) => {
+      const { longitude, latitude } = loc;
+      this.setState(() => {
+        return {
+          determinedLocation: true,
+          longitude: longitude,
+          latitude: latitude,
+        }
+      });
+    }).catch((err) => {
+      alert(err);
+    });
+  }
+
+  getUserLocation() {
+    return new Promise(function(resolve, reject) {
+      if ("geolocation" in navigator) { /* geolocation is available */
+        navigator.geolocation.getCurrentPosition((position) => {
+          resolve({
+            latitude: position.coords.latitude,
+            longitude: position.coords.longitude,
+          });
+        }, (positionError) => reject(positionError),
+        {maximumAge: 60000, timeout: 10000, enableHighAccuracy: true});
+      } else { /* geolocation IS NOT available */
+        reject(new Error('No Location Support'));
+      }
+    });
+  }
+
+  render() {
+    if (this.state.determinedLocation) {
+      return (
+        <div>
+          <FiveDayForecast latitude={this.state.latitude} longitude={this.state.longitude}></FiveDayForecast>
+        </div>
+      );
+    } else {
+      return (
+        <div>Determining Location...</div>
+      )
     }
   }
-
-  c2f(temp) {
-    return parseFloat(temp) * (9 / 5) + 32;
-  }
-
-  getTemperature() {
-    if (!this.state.displayCelsius) {
-      return this.c2f(this.props.temp);
-    }
-
-    return this.props.temp; 
-  }
-
-  render() {
-    const temperatureClass = this.props.isHigh ? 'TemperatureHigh' : 'TemperatureLow';
-
-    return (
-      <p className={temperatureClass}>{this.getTemperature()}</p>
-    );
-  }
 }
-
-class Day extends Component {
-  render() {
-    return(
-      <p className='Day'>{this.props.day}</p>
-    );
-  }
-}
-
-class WeatherCard extends Component {
-  render() {
-    return (
-    <div className='WeatherCard'>
-      <Day day={this.props.day}></Day>
-      <WeatherIcon weatherCode={this.props.weatherCode} time={this.props.time}></WeatherIcon>
-      <div className='TemperatureContainer'>
-        <Temperature temp={this.props.highTemp} isHigh={true}></Temperature>
-        <Temperature temp={this.props.lowTemp} isHigh={false}></Temperature>
-      </div>
-    </div>
-    );
-  }
-}
-
-function App() {
-  return (
-    <div>
-      <WeatherCard
-      day='Wed'
-      weatherCode='200'
-      time='day'
-      highTemp={33.4}
-      lowTemp={30.4}>
-
-      </WeatherCard>
-    </div>
-  );
-}
-
-export default App;

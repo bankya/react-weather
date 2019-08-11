@@ -1,0 +1,8 @@
+.FiveDayForecast li {
+  display: inline;
+  float: left;
+}
+
+.FiveDayForecast ul {
+  list-style: none;
+}
